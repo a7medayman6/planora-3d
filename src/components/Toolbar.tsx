@@ -28,6 +28,10 @@ export function Toolbar() {
   const windowDefaults = useEditorStore((s) => s.windowDefaults);
   const setDoorDefaults = useEditorStore((s) => s.setDoorDefaults);
   const setWindowDefaults = useEditorStore((s) => s.setWindowDefaults);
+  const viewMode = useEditorStore((s) => s.viewMode);
+  const setViewMode = useEditorStore((s) => s.setViewMode);
+  const render3DMode = useEditorStore((s) => s.render3DMode);
+  const setRender3DMode = useEditorStore((s) => s.setRender3DMode);
 
   return (
     <div className="toolbar">
@@ -96,6 +100,37 @@ export function Toolbar() {
           +
         </button>
       </div>
+
+      <div className="toolbar-group toolbar-group-right">
+        <button className={`toolbar-btn ${viewMode === "2d" ? "active" : ""}`} onClick={() => setViewMode("2d")}>
+          2D
+        </button>
+        <button className={`toolbar-btn ${viewMode === "split" ? "active" : ""}`} onClick={() => setViewMode("split")}>
+          Split
+        </button>
+        <button className={`toolbar-btn ${viewMode === "3d" ? "active" : ""}`} onClick={() => setViewMode("3d")}>
+          3D
+        </button>
+      </div>
+
+      {viewMode !== "2d" && (
+        <div className="toolbar-group">
+          <button
+            className={`toolbar-btn ${render3DMode === "dollhouse" ? "active" : ""}`}
+            onClick={() => setRender3DMode("dollhouse")}
+            title="Orbit view with walls but no roof"
+          >
+            Dollhouse
+          </button>
+          <button
+            className={`toolbar-btn ${render3DMode === "walkthrough" ? "active" : ""}`}
+            onClick={() => setRender3DMode("walkthrough")}
+            title="First-person walkthrough (click the 3D view to look around, WASD to move)"
+          >
+            Walkthrough
+          </button>
+        </div>
+      )}
 
       <div className="toolbar-group toolbar-group-right">
         <button

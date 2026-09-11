@@ -81,6 +81,25 @@
 .canvas-area {
   flex: 1;
   min-width: 0;
+  display: flex;
+}
+
+.canvas-area.view-2d,
+.canvas-area.view-3d {
+  flex-direction: row;
+}
+
+.canvas-area.view-split .view-pane {
+  border-right: 1px solid #d5d8de;
+}
+
+.canvas-area.view-split .view-pane:last-child {
+  border-right: none;
+}
+
+.view-pane {
+  flex: 1;
+  min-width: 0;
   position: relative;
 }
 
@@ -184,6 +203,19 @@
   background: #2f6fed;
   color: white;
   border-color: #2f6fed;
+}
+
+.walkthrough-hint {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 22, 28, 0.75);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  pointer-events: none;
 }
 
 .panel-hint {
