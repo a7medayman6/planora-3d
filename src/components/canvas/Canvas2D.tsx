@@ -15,14 +15,18 @@ import {
   pointFromAngleLength,
   resolveDrawPoint,
   resolveStartPoint,
+  snapPointToGrid,
 } from "../../lib/geometry";
 import type { Point } from "../../types";
 import { GridLayer } from "./GridLayer";
 import { WallsLayer } from "./WallsLayer";
 import { OpeningsLayer } from "./OpeningsLayer";
+import { FurnitureLayer } from "./FurnitureLayer";
 import { RoomsLayer } from "./RoomsLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { ExactInputOverlay } from "./ExactInputOverlay";
+import { defaultFurnitureFor } from "../../store/useEditorStore";
+import type { FurnitureType } from "../../types";
 
 function isTypingTarget(el: EventTarget | null): boolean {
   const node = el as HTMLElement | null;
@@ -36,9 +40,13 @@ export function Canvas2D() {
 
   const walls = useEditorStore((s) => s.walls);
   const openings = useEditorStore((s) => s.openings);
+  const furniture = useEditorStore((s) => s.furniture);
   const selection = useEditorStore((s) => s.selection);
   const selectedWallId = selection?.kind === "wall" ? selection.id : null;
   const selectedOpeningId = selection?.kind === "opening" ? selection.id : null;
+  const selectedFurnitureId = selection?.kind === "furniture" ? selection.id : null;
+  const addFurniture = useEditorStore((s) => s.addFurniture);
+  const setPendingFurnitureType = useEditorStore((s) => s.setPendingFurnitureType);
   const tool = useEditorStore((s) => s.tool);
   const unit = useEditorStore((s) => s.unit);
   const showGrid = useEditorStore((s) => s.showGrid);
@@ -268,8 +276,33 @@ export function Canvas2D() {
         ? "crosshair"
         : "default";
 
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData("text/plain") as FurnitureType;
+      setPendingFurnitureType(null);
+      if (!type) return;
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      let position = { x: (screenX - pan.x) / zoom, y: (screenY - pan.y) / zoom };
+      if (snapEnabled) position = snapPointToGrid(position, DEFAULT_GRID_SIZE);
+      const id = addFurniture({ ...defaultFurnitureFor(type), position, rotation: 0 });
+      select({ kind: "furniture", id });
+    },
+    [pan, zoom, snapEnabled, addFurniture, setPendingFurnitureType, select],
+  );
+
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
+    <div
+      ref={containerRef}
+      className="canvas2d-root"
+      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       <Stage
         ref={stageRef}
         width={size.width}
@@ -300,6 +333,14 @@ export function Canvas2D() {
           tool={tool}
           zoom={zoom}
           pan={pan}
+        />
+        <FurnitureLayer
+          furniture={furniture}
+          selectedFurnitureId={selectedFurnitureId}
+          tool={tool}
+          zoom={zoom}
+          gridSize={DEFAULT_GRID_SIZE}
+          snapEnabled={snapEnabled}
         />
         {drawStart && previewPoint && (
           <DrawingLayer

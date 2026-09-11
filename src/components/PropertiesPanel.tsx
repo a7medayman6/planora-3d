@@ -5,6 +5,7 @@ import { formatArea, formatLength, parseLength } from "../lib/units";
 import { computeRooms } from "../lib/rooms";
 import { MATERIAL_OPTIONS } from "../lib/materials";
 import { DOOR_PRESETS, WINDOW_PRESETS, maxWidthForWall } from "../lib/openings";
+import { FURNITURE_SIZE_MAX, FURNITURE_SIZE_MIN } from "../lib/furniture";
 import type { LengthUnit, MaterialId } from "../types";
 
 function LengthField({
@@ -168,6 +169,69 @@ function OpeningProperties() {
   );
 }
 
+function FurnitureProperties() {
+  const furniture = useEditorStore((s) => s.furniture);
+  const selection = useEditorStore((s) => s.selection);
+  const updateFurniture = useEditorStore((s) => s.updateFurniture);
+  const deleteFurniture = useEditorStore((s) => s.deleteFurniture);
+  const unit = useEditorStore((s) => s.unit);
+
+  const item = furniture.find((f) => selection?.kind === "furniture" && f.id === selection.id);
+  if (!item) return null;
+
+  const clampSize = (v: number) => Math.min(FURNITURE_SIZE_MAX, Math.max(FURNITURE_SIZE_MIN, v));
+
+  return (
+    <div className="panel">
+      <h3>Furniture</h3>
+      <LengthField
+        label="Width"
+        meters={item.scale.w}
+        unit={unit}
+        onCommit={(v) => updateFurniture(item.id, { scale: { ...item.scale, w: clampSize(v) } })}
+      />
+      <LengthField
+        label="Depth"
+        meters={item.scale.d}
+        unit={unit}
+        onCommit={(v) => updateFurniture(item.id, { scale: { ...item.scale, d: clampSize(v) } })}
+      />
+      <LengthField
+        label="Height"
+        meters={item.scale.h}
+        unit={unit}
+        onCommit={(v) => updateFurniture(item.id, { scale: { ...item.scale, h: clampSize(v) } })}
+      />
+      <label className="field">
+        <span>Rotation</span>
+        <div className="field-input">
+          <input
+            type="number"
+            value={Math.round(item.rotation)}
+            onChange={(e) => {
+              const v = parseFloat(e.target.value);
+              if (!Number.isNaN(v)) updateFurniture(item.id, { rotation: ((v % 360) + 360) % 360 });
+            }}
+          />
+          <span className="field-unit">°</span>
+        </div>
+      </label>
+      <label className="field">
+        <span>Color</span>
+        <input
+          type="color"
+          value={item.color}
+          onChange={(e) => updateFurniture(item.id, { color: e.target.value })}
+          style={{ width: "100%", height: 28, border: "1px solid #d5d8de", borderRadius: 4 }}
+        />
+      </label>
+      <button className="danger-btn" onClick={() => deleteFurniture(item.id)}>
+        Delete furniture
+      </button>
+    </div>
+  );
+}
+
 function DefaultsPanel() {
   const walls = useEditorStore((s) => s.walls);
   const openings = useEditorStore((s) => s.openings);
@@ -210,5 +274,6 @@ export function PropertiesPanel() {
 
   if (selection?.kind === "wall") return <WallProperties />;
   if (selection?.kind === "opening") return <OpeningProperties />;
+  if (selection?.kind === "furniture") return <FurnitureProperties />;
   return <DefaultsPanel />;
 }
