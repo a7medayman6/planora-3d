@@ -70,4 +70,4 @@ export interface Room {
 
 export type LengthUnit = "m" | "ft";
 
-export type ToolMode = "select" | "wall" | "measure";
+export type ToolMode = "select" | "wall" | "door" | "window" | "measure" | "furniture";

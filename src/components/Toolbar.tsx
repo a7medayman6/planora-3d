@@ -1,9 +1,12 @@
 import { useEditorStore } from "../store/useEditorStore";
+import { DOOR_PRESETS, WINDOW_PRESETS } from "../lib/openings";
 import type { ToolMode } from "../types";
 
 const TOOLS: { id: ToolMode; label: string; hint: string }[] = [
   { id: "select", label: "Select", hint: "V" },
   { id: "wall", label: "Wall", hint: "W" },
+  { id: "door", label: "Door", hint: "D" },
+  { id: "window", label: "Window", hint: "N" },
 ];
 
 export function Toolbar() {
@@ -21,6 +24,10 @@ export function Toolbar() {
   const future = useEditorStore((s) => s.future);
   const zoom = useEditorStore((s) => s.zoom);
   const setZoom = useEditorStore((s) => s.setZoom);
+  const doorDefaults = useEditorStore((s) => s.doorDefaults);
+  const windowDefaults = useEditorStore((s) => s.windowDefaults);
+  const setDoorDefaults = useEditorStore((s) => s.setDoorDefaults);
+  const setWindowDefaults = useEditorStore((s) => s.setWindowDefaults);
 
   return (
     <div className="toolbar">
@@ -38,6 +45,24 @@ export function Toolbar() {
           </button>
         ))}
       </div>
+
+      {(tool === "door" || tool === "window") && (
+        <div className="toolbar-group">
+          {(tool === "door" ? DOOR_PRESETS : WINDOW_PRESETS).map((p) => {
+            const current = tool === "door" ? doorDefaults.width : windowDefaults.width;
+            const setWidth = tool === "door" ? setDoorDefaults : setWindowDefaults;
+            return (
+              <button
+                key={p.label}
+                className={`toolbar-btn ${Math.abs(current - p.width) < 1e-3 ? "active" : ""}`}
+                onClick={() => setWidth({ width: p.width })}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="toolbar-group">
         <button className="toolbar-btn" onClick={undo} disabled={past.length === 0} title="Undo (Ctrl+Z)">

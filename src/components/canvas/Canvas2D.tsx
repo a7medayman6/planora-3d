@@ -19,6 +19,7 @@ import {
 import type { Point } from "../../types";
 import { GridLayer } from "./GridLayer";
 import { WallsLayer } from "./WallsLayer";
+import { OpeningsLayer } from "./OpeningsLayer";
 import { RoomsLayer } from "./RoomsLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { ExactInputOverlay } from "./ExactInputOverlay";
@@ -34,7 +35,10 @@ export function Canvas2D() {
   const [size, setSize] = useState({ width: 800, height: 600 });
 
   const walls = useEditorStore((s) => s.walls);
-  const selectedWallId = useEditorStore((s) => s.selectedWallId);
+  const openings = useEditorStore((s) => s.openings);
+  const selection = useEditorStore((s) => s.selection);
+  const selectedWallId = selection?.kind === "wall" ? selection.id : null;
+  const selectedOpeningId = selection?.kind === "opening" ? selection.id : null;
   const tool = useEditorStore((s) => s.tool);
   const unit = useEditorStore((s) => s.unit);
   const showGrid = useEditorStore((s) => s.showGrid);
@@ -45,7 +49,7 @@ export function Canvas2D() {
   const setPan = useEditorStore((s) => s.setPan);
   const addWall = useEditorStore((s) => s.addWall);
   const deleteSelected = useEditorStore((s) => s.deleteSelected);
-  const setSelectedWallId = useEditorStore((s) => s.setSelectedWallId);
+  const select = useEditorStore((s) => s.select);
   const defaultWallThickness = useEditorStore((s) => s.defaultWallThickness);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
@@ -157,10 +161,10 @@ export function Canvas2D() {
         }
       } else if (tool === "select") {
         // Clicking empty canvas clears selection.
-        if (e.target === stage) setSelectedWallId(null);
+        if (e.target === stage) select(null);
       }
     },
-    [pan, tool, drawStart, walls, snapEnabled, finalizeSegment, setSelectedWallId],
+    [pan, tool, drawStart, walls, snapEnabled, finalizeSegment, select],
   );
 
   const handleMouseMove = useCallback(() => {
@@ -239,7 +243,7 @@ export function Canvas2D() {
         e.preventDefault();
         redo();
       } else if (e.key === "Escape" && tool === "select") {
-        setSelectedWallId(null);
+        select(null);
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -251,7 +255,7 @@ export function Canvas2D() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [tool, drawStart, previewPoint, overridePanel, worldToScreen, resetDrawing, deleteSelected, undo, redo, setSelectedWallId]);
+  }, [tool, drawStart, previewPoint, overridePanel, worldToScreen, resetDrawing, deleteSelected, undo, redo, select]);
 
   const liveLength = drawStart && previewPoint ? distance(drawStart, previewPoint) : 0;
   const liveAngle = drawStart && previewPoint ? angleDeg(drawStart, previewPoint) : 0;
@@ -260,7 +264,7 @@ export function Canvas2D() {
     ? "grabbing"
     : spaceHeldRef.current
       ? "grab"
-      : tool === "wall"
+      : tool === "wall" || tool === "door" || tool === "window"
         ? "crosshair"
         : "default";
 
@@ -288,6 +292,14 @@ export function Canvas2D() {
           zoom={zoom}
           gridSize={DEFAULT_GRID_SIZE}
           snapEnabled={snapEnabled}
+        />
+        <OpeningsLayer
+          openings={openings}
+          walls={walls}
+          selectedOpeningId={selectedOpeningId}
+          tool={tool}
+          zoom={zoom}
+          pan={pan}
         />
         {drawStart && previewPoint && (
           <DrawingLayer

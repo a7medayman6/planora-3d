@@ -165,6 +165,27 @@
   background: #fbdbd8;
 }
 
+.preset-row {
+  display: flex;
+  gap: 6px;
+}
+
+.preset-btn {
+  flex: 1;
+  background: #f2f3f5;
+  border: 1px solid #d5d8de;
+  border-radius: 5px;
+  padding: 6px 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.preset-btn.active {
+  background: #2f6fed;
+  color: white;
+  border-color: #2f6fed;
+}
+
 .panel-hint {
   font-size: 12px;
   color: #8a8f99;

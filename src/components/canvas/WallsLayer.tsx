@@ -1,22 +1,43 @@
 import { Circle, Layer, Line } from "react-konva";
 import type Konva from "konva";
-import type { Wall } from "../../types";
+import type { ToolMode, Wall } from "../../types";
 import { materialColors } from "../../lib/materials";
-import { snapPointToGrid, wallCorners } from "../../lib/geometry";
+import { distance, projectOntoLine, snapPointToGrid, wallCorners } from "../../lib/geometry";
+import { clampOffset, defaultOpening, maxWidthForWall } from "../../lib/openings";
 import { useEditorStore } from "../../store/useEditorStore";
 
 interface WallsLayerProps {
   walls: Wall[];
   selectedWallId: string | null;
-  tool: "select" | "wall" | "measure";
+  tool: ToolMode;
   zoom: number;
   gridSize: number;
   snapEnabled: boolean;
 }
 
 export function WallsLayer({ walls, selectedWallId, tool, zoom, gridSize, snapEnabled }: WallsLayerProps) {
-  const setSelectedWallId = useEditorStore((s) => s.setSelectedWallId);
+  const select = useEditorStore((s) => s.select);
   const updateWall = useEditorStore((s) => s.updateWall);
+  const addOpening = useEditorStore((s) => s.addOpening);
+  const doorDefaults = useEditorStore((s) => s.doorDefaults);
+  const windowDefaults = useEditorStore((s) => s.windowDefaults);
+
+  const handleWallClick = (wall: Wall, e: Konva.KonvaEventObject<MouseEvent>) => {
+    if (tool === "door" || tool === "window") {
+      const stage = e.target.getStage();
+      const pointer = stage?.getRelativePointerPosition();
+      if (!pointer) return;
+      const wallLength = distance(wall.start, wall.end);
+      const { offset } = projectOntoLine(pointer, wall.start, wall.end);
+      const defaults = tool === "door" ? doorDefaults : windowDefaults;
+      const width = Math.min(defaults.width, maxWidthForWall(wallLength));
+      const clamped = clampOffset(offset, wallLength, width);
+      const id = addOpening(defaultOpening(tool, wall.id, clamped, width, defaults.height));
+      select({ kind: "opening", id });
+    } else if (tool === "select") {
+      select({ kind: "wall", id: wall.id });
+    }
+  };
 
   return (
     <Layer>
@@ -35,8 +56,8 @@ export function WallsLayer({ walls, selectedWallId, tool, zoom, gridSize, snapEn
             stroke={selected ? "#2f6fed" : stroke}
             strokeWidth={(selected ? 2.5 : 1.2) / zoom}
             draggable={tool === "select"}
-            onClick={() => tool === "select" && setSelectedWallId(wall.id)}
-            onTap={() => tool === "select" && setSelectedWallId(wall.id)}
+            onClick={(e) => handleWallClick(wall, e)}
+            onTap={(e) => handleWallClick(wall, e as unknown as Konva.KonvaEventObject<MouseEvent>)}
             onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
               const node = e.target;
               const dx = node.x();

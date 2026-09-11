@@ -16,6 +16,18 @@ export function wallCorners(start: Point, end: Point, thickness: number): [Point
   ];
 }
 
+/** Project `point` onto the infinite line through `a`->`b`; returns the unclamped distance-along and the projected point. */
+export function projectOntoLine(point: Point, a: Point, b: Point): { offset: number; point: Point } {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return { offset: 0, point: { ...a } };
+  const t = ((point.x - a.x) * dx + (point.y - a.y) * dy) / lenSq;
+  const len = Math.sqrt(lenSq);
+  const offset = t * len;
+  return { offset, point: { x: a.x + t * dx, y: a.y + t * dy } };
+}
+
 export function distance(a: Point, b: Point): number {
   return Math.hypot(b.x - a.x, b.y - a.y);
 }
