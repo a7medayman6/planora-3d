@@ -1,0 +1,173 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 14px;
+  background: #1f2430;
+  color: #f4f5f7;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-brand {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  margin-right: 8px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-inline-start: 12px;
+  border-left: 1px solid #3a3f4d;
+}
+
+.toolbar-group:first-of-type {
+  border-left: none;
+  padding-inline-start: 0;
+}
+
+.toolbar-group-right {
+  margin-left: auto;
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #d3d6dd;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: #2c3140;
+}
+
+.toolbar-btn.active {
+  background: #2f6fed;
+  color: white;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toolbar-zoom-label {
+  font-size: 12px;
+  color: #9ba0ab;
+  min-width: 62px;
+  text-align: center;
+}
+
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.canvas-area {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-left: 1px solid #e2e4e9;
+  overflow-y: auto;
+}
+
+.panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7a7f8a;
+  margin: 12px 0 0;
+}
+
+.panel h3:first-child {
+  margin-top: 0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #4a4e58;
+}
+
+.field-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-input input {
+  flex: 1;
+  padding: 5px 7px;
+  border: 1px solid #d5d8de;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.field-unit {
+  color: #9198a5;
+  font-size: 12px;
+}
+
+.field select {
+  padding: 5px 7px;
+  border: 1px solid #d5d8de;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.field-readout {
+  font-size: 12px;
+  color: #4a4e58;
+}
+
+.danger-btn {
+  margin-top: 8px;
+  background: #fdeceb;
+  color: #c3392b;
+  border: 1px solid #f3c6c1;
+  border-radius: 5px;
+  padding: 7px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.danger-btn:hover {
+  background: #fbdbd8;
+}
+
+.panel-hint {
+  font-size: 12px;
+  color: #8a8f99;
+  line-height: 1.5;
+  margin-top: 8px;
+}
