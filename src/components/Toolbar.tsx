@@ -1,6 +1,7 @@
 import { useEditorStore } from "../store/useEditorStore";
 import { DOOR_PRESETS, WINDOW_PRESETS } from "../lib/openings";
 import { ProjectMenu } from "./ProjectMenu";
+import { BackgroundImagePanel } from "./BackgroundImagePanel";
 import type { ToolMode } from "../types";
 
 const TOOLS: { id: ToolMode; label: string; hint: string }[] = [
@@ -8,6 +9,7 @@ const TOOLS: { id: ToolMode; label: string; hint: string }[] = [
   { id: "wall", label: "Wall", hint: "W" },
   { id: "door", label: "Door", hint: "D" },
   { id: "window", label: "Window", hint: "N" },
+  { id: "measure", label: "Measure", hint: "M" },
 ];
 
 export function Toolbar() {
@@ -40,6 +42,7 @@ export function Toolbar() {
 
       <div className="toolbar-group">
         <ProjectMenu />
+        <BackgroundImagePanel />
       </div>
 
       <div className="toolbar-group">

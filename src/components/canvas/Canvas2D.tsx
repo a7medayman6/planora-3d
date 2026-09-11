@@ -24,6 +24,9 @@ import { OpeningsLayer } from "./OpeningsLayer";
 import { FurnitureLayer } from "./FurnitureLayer";
 import { RoomsLayer } from "./RoomsLayer";
 import { DrawingLayer } from "./DrawingLayer";
+import { MeasureLayer } from "./MeasureLayer";
+import { DimensionsLayer } from "./DimensionsLayer";
+import { BackgroundImageLayer } from "./BackgroundImageLayer";
 import { ExactInputOverlay } from "./ExactInputOverlay";
 import { defaultFurnitureFor } from "../../store/useEditorStore";
 import type { FurnitureType } from "../../types";
@@ -62,8 +65,21 @@ export function Canvas2D() {
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
   const setCanvasStage = useEditorStore((s) => s.setCanvasStage);
+  const pinnedDimensionWallIds = useEditorStore((s) => s.pinnedDimensionWallIds);
+  const backgroundImage = useEditorStore((s) => s.backgroundImage);
+  const calibrating = useEditorStore((s) => s.calibrating);
+  const setCalibrating = useEditorStore((s) => s.setCalibrating);
+  const updateBackgroundImage = useEditorStore((s) => s.updateBackgroundImage);
 
   const rooms = useMemo(() => computeRooms(walls), [walls]);
+
+  // --- measure tool state ---
+  const [measureStart, setMeasureStart] = useState<Point | null>(null);
+  const [measureEnd, setMeasureEnd] = useState<Point | null>(null);
+  const [measureLive, setMeasureLive] = useState<Point | null>(null);
+
+  // --- background image calibration state ---
+  const [calibPoints, setCalibPoints] = useState<Point[]>([]);
 
   useEffect(() => {
     setCanvasStage(stageRef.current);
@@ -104,6 +120,15 @@ export function Canvas2D() {
   useEffect(() => {
     if (tool !== "wall") resetDrawing();
   }, [tool, resetDrawing]);
+
+  // Cancel in-progress measurement when the tool changes away from "measure".
+  useEffect(() => {
+    if (tool !== "measure") {
+      setMeasureStart(null);
+      setMeasureEnd(null);
+      setMeasureLive(null);
+    }
+  }, [tool]);
 
   const worldToScreen = useCallback(
     (p: Point) => ({ x: pan.x + p.x * zoom, y: pan.y + p.y * zoom }),
@@ -154,6 +179,42 @@ export function Canvas2D() {
       const world = stage.getRelativePointerPosition();
       if (!world) return;
 
+      if (calibrating) {
+        if (e.evt.button !== 0) return;
+        const next = [...calibPoints, world];
+        if (next.length < 2) {
+          setCalibPoints(next);
+          return;
+        }
+        const [p1, p2] = next;
+        const currentScale = backgroundImage?.scale ?? 1;
+        const originalPixelDistance = distance(p1, p2) / currentScale;
+        const input = window.prompt(
+          "Enter the real-world distance between the two points you clicked (in meters):",
+          (originalPixelDistance * currentScale).toFixed(2),
+        );
+        setCalibPoints([]);
+        setCalibrating(false);
+        const realDistance = input ? parseFloat(input) : NaN;
+        if (!Number.isNaN(realDistance) && realDistance > 0 && originalPixelDistance > 0) {
+          updateBackgroundImage({ scale: realDistance / originalPixelDistance });
+        }
+        return;
+      }
+
+      if (tool === "measure") {
+        if (e.evt.button !== 0) return;
+        const resolved = resolveStartPoint(world, walls, snapEnabled, DEFAULT_GRID_SIZE, ENDPOINT_SNAP_TOLERANCE);
+        if (!measureStart || measureEnd) {
+          setMeasureStart(resolved);
+          setMeasureEnd(null);
+          setMeasureLive(resolved);
+        } else {
+          setMeasureEnd(resolved);
+        }
+        return;
+      }
+
       if (tool === "wall") {
         if (e.evt.button !== 0) return;
         if (!drawStart) {
@@ -178,15 +239,39 @@ export function Canvas2D() {
         if (e.target === stage) select(null);
       }
     },
-    [pan, tool, drawStart, walls, snapEnabled, finalizeSegment, select],
+    [
+      pan,
+      tool,
+      drawStart,
+      walls,
+      snapEnabled,
+      finalizeSegment,
+      select,
+      calibrating,
+      calibPoints,
+      backgroundImage,
+      setCalibrating,
+      updateBackgroundImage,
+      measureStart,
+      measureEnd,
+    ],
   );
 
   const handleMouseMove = useCallback(() => {
     // Panning is handled by the window-level listener below (reliable during fast drags).
     if (isPanning) return;
-    if (tool !== "wall" || !drawStart || overridePanel) return;
     const stage = stageRef.current;
     if (!stage) return;
+
+    if (tool === "measure" && measureStart && !measureEnd) {
+      const world = stage.getRelativePointerPosition();
+      if (!world) return;
+      const resolved = resolveStartPoint(world, walls, snapEnabled, DEFAULT_GRID_SIZE, ENDPOINT_SNAP_TOLERANCE);
+      setMeasureLive(resolved);
+      return;
+    }
+
+    if (tool !== "wall" || !drawStart || overridePanel) return;
     const world = stage.getRelativePointerPosition();
     if (!world) return;
     const resolved = resolveDrawPoint({
@@ -201,7 +286,7 @@ export function Canvas2D() {
     });
     setPreviewPoint(resolved.point);
     setSnappedToEndpoint(resolved.snappedToEndpoint);
-  }, [isPanning, tool, drawStart, overridePanel, walls, snapEnabled]);
+  }, [isPanning, tool, drawStart, overridePanel, walls, snapEnabled, measureStart, measureEnd]);
 
   // Window-level pan tracking (smoother than relying only on stage's onMouseMove).
   useEffect(() => {
@@ -244,6 +329,21 @@ export function Canvas2D() {
         }
       }
 
+      if (e.key === "Escape" && calibrating) {
+        e.preventDefault();
+        setCalibrating(false);
+        setCalibPoints([]);
+        return;
+      }
+
+      if (e.key === "Escape" && tool === "measure" && measureStart) {
+        e.preventDefault();
+        setMeasureStart(null);
+        setMeasureEnd(null);
+        setMeasureLive(null);
+        return;
+      }
+
       if (isTypingTarget(e.target)) return;
 
       if ((e.key === "Delete" || e.key === "Backspace") && tool === "select") {
@@ -269,7 +369,21 @@ export function Canvas2D() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [tool, drawStart, previewPoint, overridePanel, worldToScreen, resetDrawing, deleteSelected, undo, redo, select]);
+  }, [
+    tool,
+    drawStart,
+    previewPoint,
+    overridePanel,
+    worldToScreen,
+    resetDrawing,
+    deleteSelected,
+    undo,
+    redo,
+    select,
+    calibrating,
+    setCalibrating,
+    measureStart,
+  ]);
 
   const liveLength = drawStart && previewPoint ? distance(drawStart, previewPoint) : 0;
   const liveAngle = drawStart && previewPoint ? angleDeg(drawStart, previewPoint) : 0;
@@ -278,7 +392,7 @@ export function Canvas2D() {
     ? "grabbing"
     : spaceHeldRef.current
       ? "grab"
-      : tool === "wall" || tool === "door" || tool === "window"
+      : calibrating || tool === "wall" || tool === "door" || tool === "window" || tool === "measure"
         ? "crosshair"
         : "default";
 
@@ -322,8 +436,10 @@ export function Canvas2D() {
         onMouseMove={handleMouseMove}
         style={{ cursor: cursorStyle, background: "#fbfbfa" }}
       >
+        {backgroundImage && <BackgroundImageLayer backgroundImage={backgroundImage} />}
         {showGrid && <GridLayer pan={pan} zoom={zoom} width={size.width} height={size.height} />}
         <RoomsLayer rooms={rooms} unit={unit} zoom={zoom} />
+        <DimensionsLayer walls={walls} pinnedWallIds={pinnedDimensionWallIds} unit={unit} zoom={zoom} />
         <WallsLayer
           walls={walls}
           selectedWallId={selectedWallId}
@@ -359,6 +475,9 @@ export function Canvas2D() {
             zoom={zoom}
             snappedToEndpoint={snappedToEndpoint}
           />
+        )}
+        {measureStart && (measureEnd ?? measureLive) && (
+          <MeasureLayer start={measureStart} end={(measureEnd ?? measureLive)!} unit={unit} zoom={zoom} />
         )}
       </Stage>
 

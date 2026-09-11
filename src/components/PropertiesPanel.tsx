@@ -54,6 +54,8 @@ function WallProperties() {
   const updateWall = useEditorStore((s) => s.updateWall);
   const deleteWall = useEditorStore((s) => s.deleteWall);
   const unit = useEditorStore((s) => s.unit);
+  const pinnedDimensionWallIds = useEditorStore((s) => s.pinnedDimensionWallIds);
+  const toggleDimensionPin = useEditorStore((s) => s.toggleDimensionPin);
 
   const wall = walls.find((w) => selection?.kind === "wall" && w.id === selection.id);
   if (!wall) return null;
@@ -93,6 +95,12 @@ function WallProperties() {
         </select>
       </label>
       <div className="field-readout">Angle: {Math.round(angle * 10) / 10}°</div>
+      <button
+        className={`preset-btn ${pinnedDimensionWallIds.includes(wall.id) ? "active" : ""}`}
+        onClick={() => toggleDimensionPin(wall.id)}
+      >
+        📌 {pinnedDimensionWallIds.includes(wall.id) ? "Unpin dimension" : "Pin dimension"}
+      </button>
       <button className="danger-btn" onClick={() => deleteWall(wall.id)}>
         Delete wall
       </button>

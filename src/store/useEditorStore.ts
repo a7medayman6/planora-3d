@@ -83,6 +83,10 @@ interface EditorState {
   pinnedDimensionWallIds: string[];
   backgroundImage: BackgroundImage | null;
 
+  /** True while the next two canvas clicks should calibrate the background image's scale. */
+  calibrating: boolean;
+  setCalibrating: (v: boolean) => void;
+
   /** Transient (not persisted) handle to the 2D Konva stage, for PNG export. */
   canvasStage: Konva.Stage | null;
   setCanvasStage: (stage: Konva.Stage | null) => void;
@@ -176,6 +180,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     pinnedDimensionWallIds: [],
     backgroundImage: null,
+
+    calibrating: false,
+    setCalibrating: (v) => set({ calibrating: v }),
 
     canvasStage: null,
     setCanvasStage: (stage) => set({ canvasStage: stage }),
