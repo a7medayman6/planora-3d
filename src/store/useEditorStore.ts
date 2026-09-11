@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type Konva from "konva";
 import type { FurnitureItem, FurnitureType, LengthUnit, MaterialId, Opening, OpeningType, ToolMode, Wall } from "../types";
 import { FURNITURE_PRESETS } from "../lib/furniture";
 
@@ -56,6 +57,7 @@ export interface ProjectData {
 
 interface EditorState {
   projectName: string;
+  activeProjectId: string | null;
   walls: Wall[];
   openings: Opening[];
   furniture: FurnitureItem[];
@@ -80,6 +82,10 @@ interface EditorState {
 
   pinnedDimensionWallIds: string[];
   backgroundImage: BackgroundImage | null;
+
+  /** Transient (not persisted) handle to the 2D Konva stage, for PNG export. */
+  canvasStage: Konva.Stage | null;
+  setCanvasStage: (stage: Konva.Stage | null) => void;
 
   past: HistorySnapshot[];
   future: HistorySnapshot[];
@@ -122,7 +128,8 @@ interface EditorState {
   undo: () => void;
   redo: () => void;
 
-  loadProject: (data: ProjectData) => void;
+  setProjectName: (name: string) => void;
+  loadProject: (data: ProjectData, id?: string) => void;
   newProject: () => void;
   toProjectData: () => ProjectData;
 }
@@ -144,6 +151,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
   return {
     projectName: "Untitled Project",
+    activeProjectId: null,
     walls: [],
     openings: [],
     furniture: [],
@@ -168,6 +176,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     pinnedDimensionWallIds: [],
     backgroundImage: null,
+
+    canvasStage: null,
+    setCanvasStage: (stage) => set({ canvasStage: stage }),
 
     past: [],
     future: [],
@@ -319,9 +330,12 @@ export const useEditorStore = create<EditorState>((set, get) => {
       });
     },
 
-    loadProject: (data) => {
+    setProjectName: (name) => set({ projectName: name }),
+
+    loadProject: (data, id) => {
       set({
         projectName: data.name,
+        activeProjectId: id ?? null,
         unit: data.unit,
         walls: data.walls,
         openings: data.openings,
@@ -339,6 +353,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     newProject: () => {
       set({
         projectName: "Untitled Project",
+        activeProjectId: null,
         walls: [],
         openings: [],
         furniture: [],

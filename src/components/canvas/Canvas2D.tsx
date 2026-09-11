@@ -61,8 +61,14 @@ export function Canvas2D() {
   const defaultWallThickness = useEditorStore((s) => s.defaultWallThickness);
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
+  const setCanvasStage = useEditorStore((s) => s.setCanvasStage);
 
   const rooms = useMemo(() => computeRooms(walls), [walls]);
+
+  useEffect(() => {
+    setCanvasStage(stageRef.current);
+    return () => setCanvasStage(null);
+  }, [setCanvasStage]);
 
   // --- in-progress wall drawing state ---
   const [drawStart, setDrawStart] = useState<Point | null>(null);

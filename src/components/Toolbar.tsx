@@ -1,5 +1,6 @@
 import { useEditorStore } from "../store/useEditorStore";
 import { DOOR_PRESETS, WINDOW_PRESETS } from "../lib/openings";
+import { ProjectMenu } from "./ProjectMenu";
 import type { ToolMode } from "../types";
 
 const TOOLS: { id: ToolMode; label: string; hint: string }[] = [
@@ -36,6 +37,10 @@ export function Toolbar() {
   return (
     <div className="toolbar">
       <div className="toolbar-brand">Planora 3D</div>
+
+      <div className="toolbar-group">
+        <ProjectMenu />
+      </div>
 
       <div className="toolbar-group">
         {TOOLS.map((t) => (
